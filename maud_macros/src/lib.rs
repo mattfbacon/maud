@@ -10,18 +10,21 @@ mod escape;
 mod generate;
 mod parse;
 
-use proc_macro2::{Ident, Span, TokenStream, TokenTree};
+use proc_macro2::{TokenStream, TokenTree};
 use proc_macro_error::proc_macro_error;
 use quote::quote;
 
 #[proc_macro]
 #[proc_macro_error]
-pub fn html(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    expand(input.into()).into()
+pub fn html_into(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let mut tokens = TokenStream::from(input).into_iter();
+    let output = tokens.next().unwrap();
+    let _comma = tokens.next().unwrap();
+    let input: TokenStream = tokens.collect();
+    expand(output, input).into()
 }
 
-fn expand(input: TokenStream) -> TokenStream {
-    let output_ident = TokenTree::Ident(Ident::new("__maud_output", Span::mixed_site()));
+fn expand(output_ident: TokenTree, input: TokenStream) -> TokenStream {
     // Heuristic: the size of the resulting markup tends to correlate with the
     // code size of the template itself
     let size_hint = input.to_string().len();
@@ -30,8 +33,7 @@ fn expand(input: TokenStream) -> TokenStream {
     quote!({
         extern crate alloc;
         extern crate maud;
-        let mut #output_ident = alloc::string::String::with_capacity(#size_hint);
+        #output_ident.reserve(#size_hint);
         #stmts
-        maud::PreEscaped(#output_ident)
     })
 }

@@ -14,7 +14,17 @@ extern crate alloc;
 use alloc::{borrow::Cow, boxed::Box, string::String, sync::Arc};
 use core::fmt::{self, Arguments, Display, Write};
 
-pub use maud_macros::html;
+pub use maud_macros::html_into;
+
+#[macro_export]
+macro_rules! html {
+    ($($tokens:tt)*) => {{
+        extern crate alloc;
+        let mut __maud_output = alloc::string::String::new();
+        $crate::html_into!(__maud_output, $($tokens)*);
+        $crate::PreEscaped(__maud_output)
+    }};
+}
 
 mod escape;
 
